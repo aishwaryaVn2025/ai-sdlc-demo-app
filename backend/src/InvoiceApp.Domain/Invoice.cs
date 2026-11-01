@@ -1,5 +1,12 @@
 namespace InvoiceApp.Domain;
 
+public class ApprovalRecord
+{
+    public string Approver { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public DateTime ApprovedAt { get; set; } = DateTime.UtcNow;
+}
+
 public class Invoice
 {
     public string Id { get; set; } = string.Empty;
@@ -10,4 +17,5 @@ public class Invoice
     public string? DecidedBy { get; set; }
     public DateTime? DecidedAt { get; set; }
     public string? DecisionNote { get; set; }
+    public List<ApprovalRecord> ApprovalHistory { get; set; } = new();
 }
