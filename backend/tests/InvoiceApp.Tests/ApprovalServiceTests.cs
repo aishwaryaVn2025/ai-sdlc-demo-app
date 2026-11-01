@@ -70,6 +70,20 @@ public class ApprovalServiceTests
     }
 
     [Fact]
+    public void Manager_ApprovesBelowLimit_49999()
+    {
+        var invoice = InvoiceWith("INV-15", InvoiceStatus.PendingApproval, 49_999m);
+        var service = ServiceFor(invoice);
+
+        var result = service.Approve("INV-15", "mgr-two", "Manager");
+
+        Assert.Equal(InvoiceStatus.Approved, result.Status);
+        Assert.Equal("mgr-two", result.DecidedBy);
+        Assert.NotNull(result.DecidedAt);
+        Assert.Empty(result.ApprovalHistory);
+    }
+
+    [Fact]
     public void Manager_RejectsAboveLimit_50001()
     {
         var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval, 50_001m);
@@ -384,4 +398,25 @@ public class ApprovalServiceTests
         Assert.Null(invoice.DecisionNote);
         Assert.Empty(invoice.ApprovalHistory);
     }
+
+    [Fact]
+public void Director_ApprovesBelowLimit_499999()
+{
+    var invoice = InvoiceWith(
+        "INV-16",
+        InvoiceStatus.PendingApproval,
+        499_999m);
+
+    var service = ServiceFor(invoice);
+
+    var result = service.Approve(
+        "INV-16",
+        "dir-two",
+        "Director");
+
+    Assert.Equal(InvoiceStatus.Approved, result.Status);
+    Assert.Equal("dir-two", result.DecidedBy);
+    Assert.NotNull(result.DecidedAt);
+    Assert.Empty(result.ApprovalHistory);
+}
 }
