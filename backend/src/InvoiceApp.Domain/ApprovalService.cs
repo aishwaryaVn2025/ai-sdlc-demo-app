@@ -1,11 +1,16 @@
 namespace InvoiceApp.Domain;
 
+using System.Globalization;
+
 /// <summary>
 /// Moves an invoice through its lifecycle: Draft -> PendingApproval -> Approved or Rejected.
 /// One invoice at a time, decided as a whole by a single approver.
 /// </summary>
 public class ApprovalService
 {
+    private const decimal ManagerApprovalLimit = 50_000m;
+    private const decimal DirectorApprovalLimit = 500_000m;
+
     private readonly IInvoiceRepository _repository;
 
     public ApprovalService(IInvoiceRepository repository)
@@ -28,10 +33,16 @@ public class ApprovalService
         return invoice;
     }
 
-    public Invoice Approve(string invoiceId, string approver)
+    public Invoice Approve(string invoiceId, string approver, string? role = null)
     {
+        if (string.IsNullOrWhiteSpace(approver))
+        {
+            throw new ArgumentException("Approver is required.", nameof(approver));
+        }
+
         var invoice = Find(invoiceId);
         EnsurePending(invoice);
+        ValidateSingleApproverLimit(invoice.Amount, role);
 
         invoice.Status = InvoiceStatus.Approved;
         invoice.DecidedBy = approver;
@@ -70,4 +81,54 @@ public class ApprovalService
                 $"Invoice {invoice.Id} is {invoice.Status}; only pending invoices can be decided.");
         }
     }
+
+    private static void ValidateSingleApproverLimit(decimal amount, string? role)
+    {
+        var normalizedRole = NormalizeRole(role);
+
+        if (normalizedRole == "Manager")
+        {
+            if (amount > ManagerApprovalLimit)
+            {
+                throw new InvalidOperationException(
+                    $"Manager approval limit exceeded: invoice amount {FormatCurrency(amount)} exceeds the maximum approved amount of {FormatCurrency(ManagerApprovalLimit)}.");
+            }
+
+            return;
+        }
+
+        if (normalizedRole == "Director")
+        {
+            if (amount > DirectorApprovalLimit)
+            {
+                throw new InvalidOperationException(
+                    $"Director single-approval limit exceeded: invoice amount {FormatCurrency(amount)} exceeds the maximum approved amount of {FormatCurrency(DirectorApprovalLimit)}. A second approver is required.");
+            }
+
+            return;
+        }
+
+        if (normalizedRole == "Approver" || normalizedRole == "Admin")
+        {
+            if (amount > ManagerApprovalLimit)
+            {
+                throw new InvalidOperationException(
+                    $"Approval limit exceeded: invoice amount {FormatCurrency(amount)} exceeds the maximum approved amount of {FormatCurrency(ManagerApprovalLimit)} for this role.");
+            }
+
+            return;
+        }
+
+        if (amount > ManagerApprovalLimit)
+        {
+            throw new InvalidOperationException(
+                $"Approval limit exceeded: invoice amount {FormatCurrency(amount)} exceeds the maximum approved amount of {FormatCurrency(ManagerApprovalLimit)}.");
+        }
+    }
+
+    private static string NormalizeRole(string? role) =>
+        string.IsNullOrWhiteSpace(role) ? string.Empty : role.Trim();
+
+    private static string FormatCurrency(decimal value) =>
+        value.ToString("C", CultureInfo.InvariantCulture);
 }

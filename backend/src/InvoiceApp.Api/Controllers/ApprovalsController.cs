@@ -20,7 +20,7 @@ public class ApprovalsController : ApiControllerBase
 
     [HttpPost("{invoiceId}/approve")]
     public ActionResult<Invoice> Approve(string invoiceId) =>
-        Handle(() => _approvals.Approve(invoiceId, HttpContext.GetSession().Username));
+        Handle(() => _approvals.Approve(invoiceId, HttpContext.GetSession().Username, HttpContext.GetSession().Role));
 
     [HttpPost("{invoiceId}/reject")]
     public ActionResult<Invoice> Reject(string invoiceId, [FromBody] RejectRequest request) =>
