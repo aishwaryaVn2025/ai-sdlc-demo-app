@@ -129,4 +129,13 @@ The remaining uncovered mutation-testing cases were deferred for future test har
 
 Detailed review results are recorded in `review-results/INDEPENDENT_REVIEW.md`.
 
-## 7
+## 11. GitHub Pull Request
+
+Pull Request: https://github.com/aishwaryaVn2025/ai-sdlc-demo-app/pull/1
+
+The feature branch contains the implementation, tests,
+mutation results, and independent AI review documentation.
+
+The pull request was created within the personal GitHub fork
+because the original repository restricts pull request creation
+to collaborators.
