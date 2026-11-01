@@ -1,38 +1,49 @@
-# Project conventions for AI agents
+# AI Agent Instructions
 
-Invoice approval demo app: ASP.NET Core 8 Web API with a small static web UI.
+## Project
+.NET 8 invoice approval application using Domain, API and test projects.
 
-## Layout
+## Business Rules
+- Manager: may approve invoices up to 50,000.
+- Director: may approve invoices up to 500,000.
+- Invoices above 500,000 require two distinct approvers.
+- The second approver must be a Director.
+- The same person cannot approve the same invoice twice.
+- Rejected attempts must return a clear reason.
+- Rejected attempts must not modify any invoice state.
 
-- `backend/src/InvoiceApp.Domain`: business rules, no web or storage code. `ApprovalService` owns the invoice lifecycle (Draft, PendingApproval, Approved, Rejected).
-- `backend/src/InvoiceApp.Api`: controllers, sign-in (`Auth/`), in-memory repository, and the web UI under `wwwroot/`.
-- `backend/tests/InvoiceApp.Tests`: xUnit tests, one test class per class under test, named `<ClassUnderTest>Tests`.
-- `e2e`: Playwright end-to-end tests (`tests/`) and page objects (`pages/`).
-- `docs/use-cases`: short briefs for features we may build.
+## Architecture
+- Business logic belongs in InvoiceApp.Domain.
+- HTTP concerns belong in InvoiceApp.Api.
+- Preserve existing behavior unless the specification requires a change.
+- Keep changes small and testable.
 
-## Conventions
+## Testing
+Run: dotnet test backend/InvoiceApp.sln
 
-- Controllers live in `Controllers/`, one per resource, route `api/[controller]`. Request bodies are `record` types declared inside the controller.
-- Controllers inherit `ApiControllerBase` and use `Handle(...)` so service errors map to 404, 409 and 400.
-- Every endpoint is behind sign-in. Restrict actions with `[RequireRole("...")]`: destructive actions are Admin only, approvals are Approver or Admin.
-- Business rules go in the Domain project, never in controllers.
-- Register services in `Program.cs`. Repositories are interfaces in Domain with an in-memory implementation in Api.
-- Every new rule or endpoint needs tests. Use `FakeInvoiceRepository` in tests.
-- Use clear names; no one-letter variables or `flag` parameters.
-- End-to-end tests use page objects and role-based locators (`getByRole`, `getByLabel`), never CSS or XPath selectors.
+Required tests:
+- Manager approval below and at 50,000
+- Manager rejection above 50,000
+- Director approval below and at 500,000
+- Director rejection above 500,000 in single-approval flow
+- Two-approver workflow above 500,000
+- Second approver must be Director
+- Duplicate approver rejected
+- Rejected attempt leaves state unchanged
 
-## Commands
+Also create a Playwright UI test and perform Stryker.NET mutation testing.
 
-- Run the app: `dotnet run --project backend/src/InvoiceApp.Api` then open http://localhost:5000
-- Run the tests: `dotnet test backend/InvoiceApp.sln`
-- Run end-to-end tests: `cd e2e && npm install && npx playwright install chromium && npm test`
+## AI Development Process
+- Read the specification before changing code.
+- Implement single-approver rules first.
+- Implement the two-approver workflow in a separate commit.
+- Use specialist agents for implementation, testing, and review.
+- Log actual AI interactions, decisions and generated outputs.
+- Do not invent execution results or review evidence.
 
-## Demo accounts (not real credentials)
-
-- `demo.approver` / `ChangeMe123!` (role Approver)
-- `demo.admin` / `ChangeMe123!` (role Admin)
-
-## Never
-
-- Commit real credentials, tokens or customer data.
-- Add business logic to `Program.cs` or controllers.
+## Review Expectations
+- Identify functional bugs and missing edge cases.
+- Verify boundary values and state preservation.
+- Review generated tests for meaningful assertions.
+- Report each finding as Fixed, Dismissed, or Deferred, with a reason.
+- Run tests before recommending changes for merging.
